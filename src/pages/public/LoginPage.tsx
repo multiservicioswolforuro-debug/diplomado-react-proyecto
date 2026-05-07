@@ -14,10 +14,10 @@ import { createInitialState, handleZodErros } from '../../helpers';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAlert, useAuth, useAxios } from '../../hooks';
 
-//const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export type LoginActionState = ActionState<LoginFormValues>;
+
 const initialState = createInitialState<LoginFormValues>();
+
 export const LoginPage = () => {
   const { showAlert } = useAlert();
   const { login } = useAuth();
@@ -32,18 +32,43 @@ export const LoginPage = () => {
       username: formData.get('username') as string,
       password: formData.get('password') as string,
     };
+
     try {
       schemaLogin.parse(rawData);
-      //await delay(5000);
+
       const response = await axios.post('login', rawData);
-      if (!response?.data?.token) throw new Error('Token no existe');
-      login(response.data.token, { username: rawData.username });
+
+      console.log('LOGIN RESPONSE:', response.data);
+
+      // OBTENER TOKEN
+      const token =
+        response?.data?.token ||
+        response?.data?.accessToken ||
+        response?.data?.data?.token;
+
+      // OBTENER USUARIO
+      const user =
+        response?.data?.user || {
+          username: rawData.username,
+        };
+
+      if (!token) {
+        throw new Error('Token no existe');
+      }
+
+      // GUARDAR LOGIN
+      login(token, user);
+
       showAlert('Bienvenido', 'success');
-      navigate('/perfil');
+
+      navigate('/tasks');
     } catch (error) {
       const err = handleZodErros<LoginFormValues>(error, rawData);
+
       console.log('error', err);
+
       showAlert(err.message, 'error');
+
       return err;
     }
   };
@@ -67,10 +92,10 @@ export const LoginPage = () => {
         sx={{
           maxWidth: 'sm',
           display: 'flex',
-          flexDirection: 'column', // para que los hijos se apilen verticalmente
-          justifyContent: 'center', // centra verticalmente el contenido del box
+          flexDirection: 'column',
+          justifyContent: 'center',
           height: '100vh',
-          textAlign: 'center', // para centrar texto dentro de hijos si quieres
+          textAlign: 'center',
         }}
       >
         <Paper elevation={3} sx={{ padding: 4 }}>
@@ -80,6 +105,9 @@ export const LoginPage = () => {
 
           <Typography variant="body2" sx={{ mb: 3 }}>
             Proyecto Diplomado para REACT
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 4 }}>
+            JUAN JOSE CALLAHUARA CONDORI
           </Typography>
 
           <Box component={'form'} action={submitAction} sx={{ width: '100%' }}>
@@ -125,7 +153,10 @@ export const LoginPage = () => {
             >
               {isPending ? 'Ingresando...' : 'Ingresar'}
             </Button>
-            <Link to={'/user'}>Registrar nuevo usuario</Link>
+
+            <Link to={'/user'}>
+              Registrar nuevo usuario
+            </Link>
           </Box>
         </Paper>
       </Box>
